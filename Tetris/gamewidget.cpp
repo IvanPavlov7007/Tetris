@@ -72,7 +72,7 @@ void GameWidget::timerTick()
 {
 	if (figure.empty())
 	{
-		switch (rand() % 8)
+		switch (rand() % 10)
 		{
 		case 0:
 		case 1:
@@ -93,6 +93,10 @@ void GameWidget::timerTick()
 			break;
 		case 7:
 			createMirroredL();
+			break;
+		case 8:
+		case 9:
+			createWASD();
 			break;
 		}
 		if (!tryMove(figure))
@@ -294,6 +298,15 @@ void GameWidget::createMirroredL()
 	figure[2] = cells[4][2];
 	figure[3] = cells[3][2];
 	currentFigureCenter = cells[4][1];
+}
+void GameWidget::createWASD()
+{
+	figure.resize(4);
+	figure[0] = cells[3][0];
+	figure[1] = cells[4][0];
+	figure[2] = cells[5][0];
+	figure[3] = cells[4][1];
+	currentFigureCenter = cells[4][0];
 }
 #pragma endregion
 

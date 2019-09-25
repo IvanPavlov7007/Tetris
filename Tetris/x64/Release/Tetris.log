@@ -1,2 +1,5 @@
-﻿  gamewidget.cpp
+﻿  Moc'ing gamewidget.h...
+  moc_gamewidget.cpp
+  gamewidget.cpp
+  main.cpp
   Tetris.vcxproj -> D:\Stuff\Projects\Tetris\x64\Release\Tetris.exe

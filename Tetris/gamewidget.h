@@ -31,6 +31,7 @@ private:
 	void createL();
 	void createMirroredZ();
 	void createMirroredL();
+	void createWASD();
 
 	void paintEvent(QPaintEvent *event) override;
 	void keyPressEvent(QKeyEvent *event) override;
