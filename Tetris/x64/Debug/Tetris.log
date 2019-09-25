@@ -1,3 +1,6 @@
-﻿  gamewidget.cpp
+﻿  Moc'ing gamewidget.h...
+  moc_gamewidget.cpp
+  gamewidget.cpp
+  main.cpp
   Tetris.vcxproj -> D:\Stuff\Projects\Tetris\x64\Debug\Tetris.exe
   Tetris.vcxproj -> D:\Stuff\Projects\Tetris\x64\Debug\Tetris.pdb (Full PDB)

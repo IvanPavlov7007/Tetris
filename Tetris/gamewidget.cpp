@@ -6,19 +6,46 @@
 #include <QMouseEvent>
 #include <QMediaPlayer>
 #include <QMediaPlaylist>
-//#include <QLabel>
-//#include <QHBoxLayout> 
+#include <QLabel>
+#include <QCheckBox>
+#include <QHBoxLayout>
+#include <QVBoxLayout>
 #include "gamewidget.h"
 
 GameWidget::GameWidget()
 	: QWidget()
 {
-	setFixedSize(355, 705);
-	/*QHBoxLayout *_layout = new QHBoxLayout(this);
-	_layout->addStretch();
-	_layout->setStretchFactor(_layout, 0);
-	label = new QLabel("My implementation of the tetris idea", this);
-	_layout->addWidget(label);*/
+	setFixedSize(windowWidth, windowHeight);
+#pragma region UI
+
+	aboutLabel = new QLabel(tr("The implementation of the Tetris idea by"));
+	nameLabel = new QLabel(tr("Ivan Pavlov"));
+	settingsLabel = new QLabel(tr("Settings:"));
+	colorButton = new QCheckBox("Invert colors",this);
+	soundButton = new QCheckBox("Turn off sound", this);
+	colorButton->installEventFilter(this);
+	soundButton->installEventFilter(this);
+	connect(colorButton, &QCheckBox::stateChanged, this, &GameWidget::toggleInversedColors);
+	connect(soundButton, &QCheckBox::stateChanged, this, &GameWidget::toggleSound);
+	QHBoxLayout *nameLayout = new QHBoxLayout;
+	nameLayout->addStretch();
+	nameLayout->addWidget(nameLabel);
+	hiddenLayout = new QWidget;
+	QVBoxLayout *vl = new QVBoxLayout;
+	vl->addWidget(settingsLabel);
+	vl->addWidget(colorButton);
+	vl->addWidget(soundButton);
+	vl->addStretch();
+	vl->addWidget(aboutLabel);
+	vl->addLayout(nameLayout);
+	hiddenLayout->setLayout(vl);
+	QHBoxLayout* mLayout = new QHBoxLayout;
+	QSpacerItem *strch = new QSpacerItem(windowWidth, 20);
+	mLayout->addItem(strch);
+	mLayout->addWidget(hiddenLayout);
+	setLayout(mLayout);
+	hiddenLayout->hide();
+#pragma endregion
 	srand(QTime::currentTime().msec());
 	timer = new QTimer(this);
 	connect(timer, &QTimer::timeout, this, &GameWidget::timerTick);
@@ -34,10 +61,10 @@ GameWidget::GameWidget()
 	QMediaPlaylist *playList = new QMediaPlaylist(this);
 	playList->addMedia(QUrl::fromLocalFile(QApplication::applicationDirPath() + "/sound.mp3"));
 	playList->setPlaybackMode(QMediaPlaylist::Loop);
-	QMediaPlayer* player = new QMediaPlayer(this);
-	player->setPlaylist(playList);
-	player->setVolume(100);
-	player->play();
+	backgroundPlayer = new QMediaPlayer(this);
+	backgroundPlayer->setPlaylist(playList);
+	backgroundPlayer->setVolume(100);
+	backgroundPlayer->play();
 	timer->start(currentSpan);
 }
 
@@ -45,19 +72,27 @@ void GameWidget::timerTick()
 {
 	if (figure.empty())
 	{
-		switch (rand() % 4)
+		switch (rand() % 8)
 		{
 		case 0:
+		case 1:
 			createBox();
 			break;
-		case 1:
+		case 2:
+		case 3:
 			createBar();
 			break;
-		case 2:
+		case 4:
 			createZ();
 			break;
-		case 3:
+		case 5:
+			createMirroredZ();
+			break;
+		case 6:
 			createL();
+			break;
+		case 7:
+			createMirroredL();
 			break;
 		}
 		if (!tryMove(figure))
@@ -134,6 +169,35 @@ QList<Cell*> GameWidget::moveCellsWithoutChecking(QList<Cell*> &figure, int delt
 	return newFigure;
 }
 
+void GameWidget::toggleInversedColors(int checked)
+{
+	switch (checked)
+	{
+	case Qt::CheckState::Checked:
+		colorInversed = true;
+		break;
+	case Qt::CheckState::Unchecked:
+		colorInversed = false;
+		break;
+	}
+	setFocus();
+	update();
+}
+
+void GameWidget::toggleSound(int checked)
+{
+	switch (checked)
+	{
+	case Qt::CheckState::Checked:
+		backgroundPlayer->pause();
+		break;
+	case Qt::CheckState::Unchecked:
+		backgroundPlayer->play();
+		break;
+	}
+	setFocus();
+}
+
 QVector<Cell*> GameWidget::nextStep(QVector<Cell*> &figure, int deltaX, int deltaY)
 {
 	QVector<Cell*> newFigure = QVector<Cell*>(figure.size());
@@ -170,6 +234,8 @@ bool GameWidget::tryMove(QVector<Cell*> &figure)
 	}
 	return result;
 }
+
+#pragma region Figures
 
 void GameWidget::createBox()
 {
@@ -210,6 +276,27 @@ void GameWidget::createL()
 	currentFigureCenter = cells[4][1];
 }
 
+void GameWidget::createMirroredZ()
+{
+	figure.resize(4);
+	figure[0] = cells[4][0];
+	figure[1] = cells[5][0];
+	figure[2] = cells[5][1];
+	figure[3] = cells[6][1];
+	currentFigureCenter = cells[5][0];
+}
+
+void GameWidget::createMirroredL()
+{
+	figure.resize(4);
+	figure[0] = cells[4][0];
+	figure[1] = cells[4][1];
+	figure[2] = cells[4][2];
+	figure[3] = cells[3][2];
+	currentFigureCenter = cells[4][1];
+}
+#pragma endregion
+
 void GameWidget::paintEvent(QPaintEvent * event)
 {
 	QPainter painter(this);
@@ -218,13 +305,12 @@ void GameWidget::paintEvent(QPaintEvent * event)
 		for (int x = 0; x < width; x++)
 		{
 			if (cells[x][y]->_filled)
-				painter.setBrush(Qt::red);
+				painter.setBrush(colorInversed? Qt::white : Qt::red);
 			else
-				painter.setBrush(Qt::white);
+				painter.setBrush(colorInversed ? Qt::red : Qt::white);
 			painter.drawRect(spacing + x * cellWidth + x * spacing, spacing + y* cellHeight + y * spacing, cellWidth, cellHeight);
 		}
 	}
-	painter.drawText(QRect(380,3 * spacing,300,100), "The implementation of the Tetris idea by\n                                             Ivan Pavlov");
 }
 
 void GameWidget::rotateFigure(bool left)
@@ -296,11 +382,21 @@ void GameWidget::keyPressEvent(QKeyEvent * event)
 
 void GameWidget::mousePressEvent(QMouseEvent * event)
 {
-	if (expanded)
-		setFixedSize(625, 705);
-	else
-		setFixedSize(355, 705);
-	expanded = !expanded;
+	if (event->pos().x() <= windowWidth)
+	{
+		if (expanded)
+		{
+			setFixedSize(windowWidth, windowHeight);
+			hiddenLayout->hide();
+		}
+		else
+		{
+			setFixedSize(expandedWindowWidth, windowHeight);
+			hiddenLayout->show();
+		}
+		expanded = !expanded;
+	}
+	QWidget::mousePressEvent(event);
 }
 
 void GameWidget::moveFigure(int deltaX, int deltaY)
